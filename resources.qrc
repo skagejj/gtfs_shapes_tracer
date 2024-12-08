@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/GTFS_shapes_Tracer" >
+        <file>icon.png</file>
+    </qresource>
+</RCC>
