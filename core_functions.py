@@ -70,3 +70,47 @@ def shape_txt(trip_gpkg,trip_name,shape_csv, trip_vertex_gpkg,shape_folder, shap
         os.remove(shapes_txt)
 
     shapes.to_csv(shapes_txt,index=False)
+
+def stop_times_update(trip_name, lines_df_csv, lines_trips_csv, OSM_roads_gpkg, temp_folder_linestrip, trip_gpkg):
+    lines_df = pd.read_csv(lines_df_csv,dtype='str',index_col='line_name')
+    lines_trips = pd.read_csv(lines_trips_csv,dtype='str', index_col='line_trip')
+    
+    trips = pd.read_csv(lines_trips.loc[trip_name,'csv'])
+
+    line_name = lines_trips.loc[trip_name,'line_name']
+    stop_times_with_seq_csv = lines_df.loc[line_name,'GTFSstop_times_with_seq']
+    Ttbl_with_seq = pd.read_csv(stop_times_with_seq_csv)
+
+    trips_to_merge = trips[['seq_stpID','shape_dist_traveled']]
+
+    trip = re.search(r"(\d+)$",trip_name).group(1)
+
+    Ttbl_with_seq = Ttbl_with_seq[Ttbl_with_seq['trip'] == int(trip)]
+
+    Ttbl_with_seq = Ttbl_with_seq.merge(trips_to_merge,how='left', on='seq_stpID')
+    
+    i_row = 0
+    while i_row < len(Ttbl_with_seq):
+        if Ttbl_with_seq.loc[i_row,'pos'] == 0:
+            Ttbl_with_seq.loc[i_row,'shape_dist_traveled'] = 0
+        i_row +=1
+
+
+    # to report the OSM ways-IDs 
+    city_roads_layer = QgsVectorLayer(OSM_roads_gpkg,'city_road',"ogr")
+    trip_layer = QgsVectorLayer(trip_gpkg,trip_name,"ogr")
+    params = {'INPUT':city_roads_layer,
+                'PREDICATE':[1,3,5,6],
+                'INTERSECT':trip_layer,
+                'METHOD':0}
+    processing.run("native:selectbylocation", params)
+
+    selected_csv = str(temp_folder_linestrip)+'/'+str(trip_name)+'_OSMways.csv'
+    QgsVectorFileWriter.writeAsVectorFormat(city_roads_layer,selected_csv,"utf-8",driverName = "CSV",onlySelected=True,attributes= [1,2])
+    selected = pd.read_csv(selected_csv)
+    ls_OSMways = selected.full_id.unique()
+
+    lines_trips.loc[trip_name,'selected_ways'] = selected_csv
+    lines_trips.loc[trip_name,'ls_unique_ways'] = " ".join(ls_OSMways)
+
+    return Ttbl_with_seq

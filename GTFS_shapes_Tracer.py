@@ -31,9 +31,13 @@ from .resources import *
 # Import the code for the dialog
 from .GTFS_shapes_Tracer_dialog import GTFSshapesTracerDialog
 import os.path
+import pandas as pd
 
 # import functions from core_function.py
-from .core_functions import shape_txt, save_and_stop_editing_layers
+from .core_functions import (shape_txt, 
+                             save_and_stop_editing_layers, 
+                             stop_times_update
+)
 
 class GTFSshapesTracer:
     """QGIS Plugin Implementation."""
@@ -278,11 +282,35 @@ class GTFSshapesTracer:
             tempfolder = 'temp/lines_trips'
             temp_folder_linestrip= os.path.join (dwnldfld,tempfolder)
             
+            tempfolder = 'temp/stop_times_perroute'
+            temp_folder_Ttbls_per_route= os.path.join (dwnldfld,tempfolder)
+
+
             shapes_txt = os.path.join(dwnldfld,'shapes.txt')
+            
+            Ttlbs_txt = str(dwnldfld)+'/stop_times.txt'
+            
+            temp_folder = 'OSM_data'
+            road_temp_folder = os.path.join(dwnldfld,temp_folder)
+            OSM_roads_name = 'OSM_roads'
+            OSM_roads_gpkg = str(road_temp_folder)+'/'+str(OSM_roads_name)+'.gpkg'
+
+            lines_df_csv = str(dwnldfld)+'/lines_files_list.csv'
+
+            lines_trips_csv =  str(dwnldfld)+'/lines_trips.csv'
 
             ls_files = os.listdir(outputspath)
             ls_trip_all = [file for file in ls_files if str(file[-5:]) == ".gpkg"]
             ls_trip_to_shape = [file for file in ls_trip_all if file != 'OSM4routing.gpkg' and file != 'mini_shapes.gpkg']
+
+            Ttbls = pd.read_csv(Ttlbs_txt,dtype='str')
+
+            if 'shape_dist_traveled' in Ttbls.columns:
+                Ttbls = Ttbls.drop(['shape_dist_traveled'],axis=1)
+                os.remove(Ttlbs_txt)
+                Ttbls.to_csv(Ttlbs_txt,index=False)
+
+            Ttbls_with_seq = pd.DataFrame()
 
             for trip_to_shape in ls_trip_to_shape:
                 trip_gpkg = os.path.join(outputspath,trip_to_shape)
@@ -290,8 +318,15 @@ class GTFSshapesTracer:
                 trip_vertex_gpkg = str(temp_folder_linestrip)+'/'+str(trip_name)+'_vertex.gpkg'
                 shape_csv = os.path.join(shape_folder,str(trip_name)+'.csv')
                 shape_txt(trip_gpkg,trip_name,shape_csv,trip_vertex_gpkg,shape_folder, shapes_txt)
+                Ttbl_with_seq = stop_times_update(trip_name, lines_df_csv, lines_trips_csv, OSM_roads_gpkg, temp_folder_linestrip, trip_gpkg)
+                Ttbls_with_seq = pd.concat([Ttbls_with_seq, Ttbl_with_seq])
 
+            #only for testing
+            Ttbls_with_seq.to_csv(str(temp_folder_Ttbls_per_route)+'/Bus50_Ttbls_to_marge.csv',index=False)
 
+            Ttbls = pd.read_csv(Ttlbs_txt)
+            Ttbls_to_merge = Ttbls_with_seq[['orig_id','shape_dist_traveled']]
+            Ttbls = Ttbls.merge(Ttbls_to_merge, how='left', on='orig_id')
 
-
-
+            os.remove(Ttlbs_txt)
+            Ttbls.to_csv(Ttlbs_txt,index=False)
