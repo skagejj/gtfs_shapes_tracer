@@ -212,7 +212,7 @@ class GTFSshapesTracer:
 
         dwnldfld = self.GTFSshapesTracer_dialog.DownloadQgsFolderWidget.filePath()
 
-        city_roads_name = 'city roads'
+        city_roads_name = 'OSM_roads'
 
         temp_folder = 'OSM_data'
         road_temp_folder = os.path.join(dwnldfld,temp_folder)
