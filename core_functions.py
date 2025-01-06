@@ -1,4 +1,13 @@
-from qgis.core import QgsVectorLayer, QgsField, edit, QgsExpression, QgsExpressionContext, QgsExpressionContextUtils, QgsVectorFileWriter
+from qgis.core import (QgsVectorLayer, 
+                        QgsField, 
+                        edit, 
+                        QgsExpression, 
+                        QgsExpressionContext, 
+                        QgsExpressionContextUtils, 
+                        QgsVectorFileWriter,
+                        QgsProject
+)
+
 import pandas as pd
 from qgis import processing
 from qgis.PyQt.QtCore import QVariant
@@ -114,3 +123,11 @@ def stop_times_update(trip_name, lines_df_csv, lines_trips_csv, OSM_roads_gpkg, 
     lines_trips.loc[trip_name,'ls_unique_ways'] = " ".join(ls_OSMways)
 
     return Ttbl_with_seq
+
+def if_display(file_path,layer_name):
+    if os.path.exists(file_path):
+        if not QgsProject.instance().mapLayersByName(layer_name):
+            city_r_layer = QgsVectorLayer(file_path,layer_name,"ogr")
+            QgsProject.instance().addMapLayer(city_r_layer)
+
+

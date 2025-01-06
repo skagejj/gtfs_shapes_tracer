@@ -36,7 +36,8 @@ import pandas as pd
 # import functions from core_function.py
 from .core_functions import (shape_txt, 
                              save_and_stop_editing_layers, 
-                             stop_times_update
+                             stop_times_update,
+                             if_display
 )
 
 class GTFSshapesTracer:
@@ -217,8 +218,22 @@ class GTFSshapesTracer:
         temp_folder = 'OSM_data'
         road_temp_folder = os.path.join(dwnldfld,temp_folder)
 
+        city_roads_name = 'city roads'
+        city_rails_name = 'city rails'
+        city_Regtrain_name = 'city Regtrain'
+        city_funicular_name = 'city funicular'
+
         OSM_roads_name = 'OSM_roads'
         OSM_roads_gpkg = str(road_temp_folder)+'/'+str(OSM_roads_name)+'.gpkg'
+
+        OSM_tram_name = 'OSM_tram'
+        OSM_rails_gpkg = str(road_temp_folder)+'/'+str(OSM_tram_name)+'.gpkg'
+
+        OSM_Regtrain_name = 'OSM_Regtrain'
+        OSM_Regtrain_gpkg = str(road_temp_folder)+'/'+str(OSM_Regtrain_name)+'.gpkg'
+
+        OSM_funicular_name = 'OSM_funicular'
+        OSM_funicular_gpkg = str(road_temp_folder)+'/'+str(OSM_funicular_name)+'.gpkg'
 
         # publishing the back ground for better read of the data
         if not QgsProject.instance().mapLayersByName('SWISSIMAGE 10 cm'):
@@ -234,6 +249,13 @@ class GTFSshapesTracer:
         if not QgsProject.instance().mapLayersByName(city_roads_name):
             city_roads_layer = QgsVectorLayer(OSM_roads_gpkg,city_roads_name,"ogr")
             QgsProject.instance().addMapLayer(city_roads_layer)
+
+        if_display(OSM_rails_gpkg,city_rails_name)
+
+        if_display(OSM_Regtrain_gpkg,city_Regtrain_name)
+
+        if_display(OSM_funicular_gpkg,city_funicular_name)
+
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -278,13 +300,9 @@ class GTFSshapesTracer:
 
             tempfolder = 'temp/lines_trips'
             temp_folder_linestrip= os.path.join (dwnldfld,tempfolder)
-		
-            tempfolder = 'temp/lines_trips'
-            temp_folder_linestrip= os.path.join (dwnldfld,tempfolder)
-            
+
             tempfolder = 'temp/stop_times_perroute'
             temp_folder_Ttbls_per_route= os.path.join (dwnldfld,tempfolder)
-
 
             shapes_txt = os.path.join(dwnldfld,'shapes.txt')
             
