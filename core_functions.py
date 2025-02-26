@@ -14,6 +14,9 @@ from qgis.PyQt.QtCore import QVariant
 import re
 import os
 
+def if_remove(file_path):
+    if os.path.exists(file_path):
+                os.remove(file_path)
 
 def save_and_stop_editing_layers(layers):
     for layer in layers:
@@ -27,6 +30,69 @@ def save_and_stop_editing_layers(layers):
         else:
             print(f"Layer '{layer.name()}' is not in editing mode.")
 
+def shp_dst_trvl(lines_trips_csv,trip_gpkg,trip_name):
+    lines_trips = pd.read_csv(lines_trips_csv,dtype='str', index_col='line_trip')
+    
+    trip_csv = lines_trips.loc[trip_name,'csv']
+
+    trip_layer = QgsVectorLayer(trip_gpkg,trip_name,"ogr")
+    
+    field_index = trip_layer.fields().indexFromName('dist_stops')
+                
+    if field_index != -1:
+        trip_layer.startEditing()
+        trip_layer.deleteAttribute(field_index)
+        trip_layer.commitChanges()
+    else:
+        print('Field dist_stops not found for '+str(trip_name))
+    
+                    #,QgsField("nd2pos", QVariant.Int)
+    pr = trip_layer.dataProvider()
+    pr.addAttributes([
+                    QgsField("dist_stops", QVariant.Double)])
+    trip_layer.updateFields()
+    
+    expression1 = QgsExpression('$length')
+    #expression2 = QgsExpression('regexp_substr( "layer" ,\'(\\d+)$\')')
+
+    context = QgsExpressionContext()
+    context.appendScopes(QgsExpressionContextUtils.globalProjectLayerScopes(trip_layer))
+
+    with edit(trip_layer):
+        for f in trip_layer.getFeatures():
+            context.setFeature(f)
+            f['dist_stops'] = expression1.evaluate(context)
+            trip_layer.updateFeature(f)
+    trip_layer.commitChanges()
+
+    lsto_keep = ['layer','dist_stops']
+       
+    IDto_delete = [trip_layer.fields().indexOf(field_name) for field_name in lsto_keep]
+    IDto_delete = [index for index in IDto_delete if index != -1]
+    
+    if_remove(trip_csv)
+    QgsVectorFileWriter.writeAsVectorFormat(trip_layer,trip_csv,"utf-8",driverName = "CSV",attributes=IDto_delete)
+
+    trip_df = pd.read_csv(trip_csv,dtype={'dist_stops':'float'})
+
+    i_row2 = -1
+    i_row = 0
+    while i_row< len(trip_df):
+        line_trip_1st_2nd = str(trip_df.loc[i_row,'layer'])
+        pattern1 = r"^(.*)_"
+        pattern2 = r"(\d+)$"
+        line_trip = re.match(pattern1,line_trip_1st_2nd).group(1)
+        nd2pos = re.search(pattern2,line_trip_1st_2nd).group(1)
+        trip_df.loc[i_row,'seq_stpID'] = str(line_trip)+'_pos'+str(nd2pos)
+        if i_row2 > -1:
+            trip_df.loc[i_row,'shape_dist_traveled'] = trip_df.loc[i_row,'dist_stops'] + trip_df.loc[i_row2,'shape_dist_traveled']
+        else:
+            trip_df.loc[i_row,'shape_dist_traveled'] = trip_df.loc[i_row,'dist_stops']
+        i_row2 += 1
+        i_row += 1
+    
+    if_remove(trip_csv)
+    trip_df.to_csv(trip_csv, index=False)
 
 def shape_txt(trip_gpkg,trip_name,shape_csv, trip_vertex_gpkg,shape_folder, shapes_txt):
     processing.run("native:extractvertices", {'INPUT':trip_gpkg,'OUTPUT':trip_vertex_gpkg})
@@ -70,6 +136,19 @@ def shape_txt(trip_gpkg,trip_name,shape_csv, trip_vertex_gpkg,shape_folder, shap
     for csv in ls_to_concat:
         trip_csv = os.path.join(shape_folder,csv)
         trip = pd.read_csv(trip_csv,dtype={'fid':'int'})
+        i_row = 0
+        i_row2 = 1
+        while i_row2 < len(trip):
+            if trip.loc[i_row,'lon'] == trip.loc[i_row2,'lon']:
+                if trip.loc[i_row,'lat'] == trip.loc[i_row2,'lat']:
+                    trip = trip.drop(i_row)
+            i_row+=1
+            i_row2+=1
+            
+        trip = trip.reset_index(drop=True)
+        trip = trip.reset_index() 
+        trip = trip.drop('fid',axis=1)
+        trip = trip.rename(columns={'index':'fid'})   
         shapes = pd.concat([shapes,trip],ignore_index=True)
 
     shapes = shapes.rename(columns = {'fid':'shape_pt_sequence','line_trip':'shape_id','lon':'shape_pt_lon','lat':'shape_pt_lat'})

@@ -37,7 +37,8 @@ import pandas as pd
 from .core_functions import (shape_txt, 
                              save_and_stop_editing_layers, 
                              stop_times_update,
-                             if_display
+                             if_display,
+                             shp_dst_trvl
 )
 
 class GTFSshapesTracer:
@@ -317,10 +318,16 @@ class GTFSshapesTracer:
 
             lines_trips_csv =  str(dwnldfld)+'/lines_trips.csv'
 
+            # loading the trips in gpkg 
             ls_files = os.listdir(outputspath)
             ls_trip_all = [file for file in ls_files if str(file[-5:]) == ".gpkg"]
             ls_trip_to_shape = [file for file in ls_trip_all if file != 'OSM4routing.gpkg' and file != 'mini_shapes.gpkg']
 
+            for trip_to_shape in ls_trip_to_shape:
+                trip_gpkg = os.path.join(outputspath,trip_to_shape)
+                trip_name = str(trip_to_shape[:-5])
+                shp_dst_trvl(lines_trips_csv,trip_gpkg,trip_name)
+            
             Ttbls = pd.read_csv(Ttlbs_txt,dtype='str')
 
             if 'shape_dist_traveled' in Ttbls.columns:
@@ -348,3 +355,5 @@ class GTFSshapesTracer:
 
             os.remove(Ttlbs_txt)
             Ttbls.to_csv(Ttlbs_txt,index=False)
+
+            print('shapes.txt is ready!')
