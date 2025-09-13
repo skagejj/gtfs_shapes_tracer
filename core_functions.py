@@ -13,6 +13,7 @@ from qgis import processing
 from qgis.PyQt.QtCore import QVariant
 import re
 import os
+import numpy as np
 
 def if_remove(file_path):
     if os.path.exists(file_path):
@@ -94,7 +95,7 @@ def shp_dst_trvl(lines_trips_csv,trip_gpkg,trip_name):
     if_remove(trip_csv)
     trip_df.to_csv(trip_csv, index=False)
 
-def shape_txt(trip_gpkg,trip_name,shape_csv, trip_vertex_gpkg,shape_folder, shapes_txt):
+def shape_txt(trip_gpkg,trip_name,shape_csv, trip_vertex_gpkg):
     processing.run("native:extractvertices", {'INPUT':trip_gpkg,'OUTPUT':trip_vertex_gpkg})
     
     trip_vertex_layer = QgsVectorLayer(trip_vertex_gpkg,trip_name,"ogr")
@@ -127,37 +128,91 @@ def shape_txt(trip_gpkg,trip_name,shape_csv, trip_vertex_gpkg,shape_folder, shap
     idtokeep = [trip_vertex_layer.fields().indexOf(field_name) for field_name in lstokeep]
     idtokeep = [index for index in idtokeep if index != -1]
 
+    if_remove(shape_csv)
     QgsVectorFileWriter.writeAsVectorFormat(trip_vertex_layer,shape_csv,"utf-8",driverName = "CSV",attributes=idtokeep)
 
-    ls_to_concat = os.listdir(shape_folder)
-
-    shapes = pd.DataFrame()
-
-    for csv in ls_to_concat:
-        trip_csv = os.path.join(shape_folder,csv)
-        trip = pd.read_csv(trip_csv,dtype={'fid':'int'})
-        i_row = 0
-        i_row2 = 1
-        while i_row2 < len(trip):
-            if trip.loc[i_row,'lon'] == trip.loc[i_row2,'lon']:
-                if trip.loc[i_row,'lat'] == trip.loc[i_row2,'lat']:
-                    trip = trip.drop(i_row)
-            i_row+=1
-            i_row2+=1
-            
-        trip = trip.reset_index(drop=True)
-        trip = trip.reset_index() 
-        trip = trip.drop('fid',axis=1)
-        trip = trip.rename(columns={'index':'fid'})   
-        shapes = pd.concat([shapes,trip],ignore_index=True)
-
-    shapes = shapes.rename(columns = {'fid':'shape_pt_sequence','line_trip':'shape_id','lon':'shape_pt_lon','lat':'shape_pt_lat'})
-
+    trip = pd.read_csv(shape_csv,dtype={'fid':'int'})
+    i_row = 0
+    i_row2 = 1
+    i_row3= 2
+    i_row4 = 3
+    i_row5 = 4
+    i_row6 = 5
+    i_row7 = 6
+    ls_idx_to_del = []
+    dlon2 = trip.loc[i_row2,'lon'] - trip.loc[i_row3,'lon']
+    dlon = trip.loc[i_row,'lon'] - trip.loc[i_row3,'lon']
+    dlat2 = trip.loc[i_row2,'lat'] - trip.loc[i_row3,'lat']
+    dlat = trip.loc[i_row,'lat'] - trip.loc[i_row3,'lat']
+    if dlon2*dlon2+dlat2*dlat2 >  dlon*dlon+dlat*dlat :
+                    ls_idx_to_del.append(i_row)
+    while i_row7 < len(trip):
+        if trip.loc[i_row2,'lon'] == trip.loc[i_row5,'lon']:
+            if trip.loc[i_row2,'lat'] == trip.loc[i_row5,'lat']:
+                dlon2 = trip.loc[i_row2,'lon'] - trip.loc[i_row,'lon']
+                dlon3 = trip.loc[i_row3,'lon'] - trip.loc[i_row,'lon']
+                dlat2 = trip.loc[i_row2,'lat'] - trip.loc[i_row,'lat']
+                dlat3 = trip.loc[i_row3,'lat'] - trip.loc[i_row,'lat']
+                if dlon2*dlon2+dlat2*dlat2 >  dlon3*dlon3+dlat3*dlat3 :
+                    ls_idx_to_del.append(i_row2)
+                else:
+                    ls_idx_to_del.append(i_row5)
+        if trip.loc[i_row3,'lon'] == trip.loc[i_row5,'lon']:
+            if trip.loc[i_row3,'lat'] == trip.loc[i_row5,'lat']:
+                dlon3 = trip.loc[i_row3,'lon'] - trip.loc[i_row2,'lon']
+                dlon4 = trip.loc[i_row4,'lon'] - trip.loc[i_row2,'lon']
+                dlat3 = trip.loc[i_row3,'lat'] - trip.loc[i_row2,'lat']
+                dlat4 = trip.loc[i_row4,'lat'] - trip.loc[i_row2,'lat']
+                if dlon3*dlon3+dlat3*dlat3 > dlon4*dlon4+dlat4*dlat4 :
+                    ls_idx_to_del.append(i_row3)
+                else:
+                    ls_idx_to_del.append(i_row5)
+        if trip.loc[i_row4,'lon'] == trip.loc[i_row5,'lon']:
+            if trip.loc[i_row4,'lat'] == trip.loc[i_row5,'lat']:
+                ls_idx_to_del.append(i_row5)
+        if trip.loc[i_row7,'lon'] == trip.loc[i_row3,'lon']:
+            if trip.loc[i_row7,'lat'] == trip.loc[i_row3,'lat']:
+                dlon4 = trip.loc[i_row4,'lon'] - trip.loc[i_row,'lon']
+                dlon3 = trip.loc[i_row3,'lon'] - trip.loc[i_row,'lon']
+                dlat4 = trip.loc[i_row4,'lat'] - trip.loc[i_row,'lat']
+                dlat3 = trip.loc[i_row3,'lat'] - trip.loc[i_row,'lat']
+                if dlon3*dlon3+dlat3*dlat3 > dlon4*dlon4+dlat4*dlat4 :
+                    ls_idx_to_del.append(i_row3)
+                else:
+                    ls_idx_to_del.append(i_row7)
+        if trip.loc[i_row6,'lon'] == trip.loc[i_row2,'lon']:
+            if trip.loc[i_row6,'lat'] == trip.loc[i_row2,'lat']:
+                dlon4 = trip.loc[i_row4,'lon'] - trip.loc[i_row,'lon']
+                dlon2 = trip.loc[i_row2,'lon'] - trip.loc[i_row,'lon']
+                dlat4 = trip.loc[i_row4,'lat'] - trip.loc[i_row,'lat']
+                dlat2 = trip.loc[i_row2,'lat'] - trip.loc[i_row,'lat']
+                if dlon2*dlon2+dlat2*dlat2 > dlon4*dlon4+dlat4*dlat4 :
+                    ls_idx_to_del.append(i_row2)
+                else:
+                    ls_idx_to_del.append(i_row6)
+        i_row+=1
+        i_row2+=1
+        i_row3+=1
+        i_row4+=1
+        i_row5+=1
+        i_row6+=1
+        i_row7+=1
     
-    if os.path.exists(shapes_txt):
-        os.remove(shapes_txt)
+    dlon6 = trip.loc[i_row6,'lon'] - trip.loc[i_row4,'lon']
+    dlon5 = trip.loc[i_row5,'lon'] - trip.loc[i_row4,'lon']
+    dlat6 = trip.loc[i_row6,'lat'] - trip.loc[i_row4,'lat']
+    dlat5 = trip.loc[i_row5,'lat'] - trip.loc[i_row4,'lat']
+    if dlon5*dlon5+dlat5*dlat5 >  dlon6*dlon6+dlat6*dlat6 :
+                    ls_idx_to_del.append(i_row5)
 
-    shapes.to_csv(shapes_txt,index=False)
+    trip = trip.drop(ls_idx_to_del)
+
+    trip = trip.reset_index(drop=True)
+    trip = trip.reset_index() 
+    trip = trip.drop('fid',axis=1)
+    trip = trip.rename(columns={'index':'fid'})   
+    
+    return trip
 
 def stop_times_update(trip_name, lines_df_csv, lines_trips_csv, OSM_roads_gpkg, temp_folder_linestrip, trip_gpkg):
     lines_df = pd.read_csv(lines_df_csv,dtype='str',index_col='line_name')
@@ -181,6 +236,16 @@ def stop_times_update(trip_name, lines_df_csv, lines_trips_csv, OSM_roads_gpkg, 
     while i_row < len(Ttbl_with_seq):
         if Ttbl_with_seq.loc[i_row,'pos'] == 0:
             Ttbl_with_seq.loc[i_row,'shape_dist_traveled'] = 0
+        if np.isnan(Ttbl_with_seq.loc[i_row,'shape_dist_traveled']):
+            trip_id = Ttbl_with_seq.loc[i_row,'trip_id']
+            i_row_prec = i_row - 1
+            for idx in trips.index:
+                if  round(trips.loc[idx,'shape_dist_traveled'],3) == round(Ttbl_with_seq.loc[i_row_prec,'shape_dist_traveled'],3):
+                    idx2 = idx+1
+                    try:
+                        Ttbl_with_seq.loc[i_row,'shape_dist_traveled'] = round(trips.loc[idx2,'shape_dist_traveled'],3)
+                    except Exception:
+                        print (str(trip_id))
         i_row +=1
 
 

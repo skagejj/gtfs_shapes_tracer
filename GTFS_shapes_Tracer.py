@@ -38,7 +38,8 @@ from .core_functions import (shape_txt,
                              save_and_stop_editing_layers, 
                              stop_times_update,
                              if_display,
-                             shp_dst_trvl
+                             shp_dst_trvl,
+                             if_remove
 )
 
 class GTFSshapesTracer:
@@ -337,17 +338,23 @@ class GTFSshapesTracer:
 
             Ttbls_with_seq = pd.DataFrame()
 
+            shapes = pd.DataFrame()
+
             for trip_to_shape in ls_trip_to_shape:
                 trip_gpkg = os.path.join(outputspath,trip_to_shape)
                 trip_name = str(trip_to_shape[:-5])
                 trip_vertex_gpkg = str(temp_folder_linestrip)+'/'+str(trip_name)+'_vertex.gpkg'
                 shape_csv = os.path.join(shape_folder,str(trip_name)+'.csv')
-                shape_txt(trip_gpkg,trip_name,shape_csv,trip_vertex_gpkg,shape_folder, shapes_txt)
+                trip = shape_txt(trip_gpkg,trip_name,shape_csv,trip_vertex_gpkg)
                 Ttbl_with_seq = stop_times_update(trip_name, lines_df_csv, lines_trips_csv, OSM_roads_gpkg, temp_folder_linestrip, trip_gpkg)
                 Ttbls_with_seq = pd.concat([Ttbls_with_seq, Ttbl_with_seq])
+                shapes = pd.concat([shapes,trip],ignore_index=True)
 
-            #only for testing
-            Ttbls_with_seq.to_csv(str(temp_folder_Ttbls_per_route)+'/Bus50_Ttbls_to_marge.csv',index=False)
+            shapes = shapes.rename(columns = {'fid':'shape_pt_sequence','line_trip':'shape_id','lon':'shape_pt_lon','lat':'shape_pt_lat'})
+            if_remove(shapes_txt)
+
+            shapes.to_csv(shapes_txt,index=False)
+
 
             Ttbls = pd.read_csv(Ttlbs_txt)
             Ttbls_to_merge = Ttbls_with_seq[['orig_id','shape_dist_traveled']]
