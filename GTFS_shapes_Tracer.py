@@ -25,6 +25,7 @@ from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QListWidgetItem
 from qgis.core import QgsProject, QgsVectorLayer, QgsRasterLayer
+from PyQt5.QtWidgets import QMessageBox
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -288,7 +289,14 @@ class GTFSshapesTracer:
         outputspath = self.GTFSshapesTracer_dialog.OutPutQgsFolderWidget.filePath()
 	
         if result:
-
+            
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            # setting message for Message Box
+            msg.setText("The \'GTFS shapes Tracer\' is in progress wait until the message box is closed")
+            # setting Message box window title
+            msg.setWindowTitle("!! wait the next message \'GTFS shapes Tracer\' is in progress !!")
+            msg.show()
             
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
@@ -363,4 +371,26 @@ class GTFSshapesTracer:
             os.remove(Ttlbs_txt)
             Ttbls.to_csv(Ttlbs_txt,index=False)
 
+            import zipfile
+
+            trips_txt = str(dwnldfld)+'/trips.txt'
+            routes_txt = str(dwnldfld)+'/routes.txt'
+            agency_txt = str(dwnldfld)+'/agency.txt'
+            stops_txt = str(dwnldfld)+'/stops.txt'
+            calendar_txt = str(dwnldfld)+'/calendar.txt'
+            calendar_dates_txt = str(dwnldfld)+'/calendar_dates.txt'
+            zip_file = str(dwnldfld)+'/'+os.path.splitext(os.path.basename(dwnldfld))[0]+'.zip'
+            lista_files = [Ttlbs_txt,shapes_txt ,trips_txt,routes_txt,agency_txt,stops_txt,calendar_txt,calendar_dates_txt]
+            with zipfile.ZipFile(zip_file, 'w') as zipMe:
+                for file in lista_files:
+                    zipMe.write(file, arcname=os.path.basename(file), compress_type=zipfile.ZIP_DEFLATED)
+
             print('shapes.txt is ready!')
+
+            msg.close()
+
+            msg2 = QMessageBox()
+            msg2.setIcon(QMessageBox.Information)
+            msg2.setText("Find the zip GTFS file with all the shapes you created \nin the zip file: " + str(zip_file))
+            msg2.setWindowTitle("Done !")
+            msg2.exec_()
