@@ -11,7 +11,7 @@ This QGIS plugin facilitates the seamless import and processing of OpenStreetMap
 - **Routing Preparation**: Generates optimized layers for routing analysis, including stop positions and road segments.
 
 ## Teasing
-Watch the teaser for this plugin [here](https://drive.google.com/file/d/1oaudC09QLDbCJ0qPIztnBvTf7KJRwrF7/view?usp=sharing).
+Watch the teaser for this plugin [here](https://drive.google.com/file/d/1LilcjYFtBTateYkhFQe7UMBH2HwEt9Wo/view?usp=drive_link).
 
 ## Plugin Series
 This plugin is the second in a series of four plugins designed to work together for comprehensive public transport analysis:
@@ -26,7 +26,7 @@ This plugin is the second in a series of four plugins designed to work together 
 3. **Prepare Routing Layers**: Generate layers optimized for routing analysis, including stop positions and road segments.
 
 ## Video Tutorial
-Watch the video tutorial for this plugin [here](https://drive.google.com/file/d/1-LpZNxSGjI7SOaZ7Hn3MHk-4omOrxm9-/view?usp=sharing).
+Watch the video tutorial for this plugin [here](https://drive.google.com/file/d/1LjzkYpu6Bfrb2KlrN3byfVHU8qHSqKoH/view?usp=sharing).
 
 ## Installation
 1. Clone or download the plugin repository.
